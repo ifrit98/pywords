@@ -5,6 +5,7 @@ from pprint import pprint
 import numpy as np
 import csv
 from sys import maxsize
+import os
 
 np.set_printoptions(threshold=maxsize)
 
@@ -14,17 +15,37 @@ LETTERS = list('abcdefghijklmnopqrstuvwxyz')
 
 
 
+def letter_ws(dir='word-lists'):
+    csvs = os.listdir(dir)
+    wset = set()
+    for fn in csvs:
+        path = os.path.join(os.path.abspath(dir), fn)
+        with open(path, newline='\n') as f:
+            reader = csv.reader(f, delimiter='\n')
+            try:
+                for w in reader:
+                    if not w: continue
+                    if len(w[0]) > 1 and len(w[0]) < 9 and '-' not in w[0]:
+                        wset.add(w[0][:-1] if w[0][-1] == ' ' else w[0])
+            except UnicodeDecodeError:
+                print("unicode error")
+                break
+
+    return wset
+
+
 def get_wordset(fp=None):
     if not fp:
         fp = 'words.txt'
 
-    words = list()
+    wset = set()
     with open(fp, newline='\n') as f:
         reader = csv.reader(f, delimiter='\n')
         for w in reader:
-            if len(w[0]) > 2:
-                words.append(w[0])
-    return set(words)
+            if len(w[0]) > 1 and len(w[0]) < 9 and '-' not in w[0]:
+                wset.add(w[0])
+    return wset.union(letter_ws())
+
 
 def permchr(iterchr, i=None):
     if not i:
@@ -35,7 +56,7 @@ def permchr(iterchr, i=None):
 
 def gen_matches(letters):
     matches = list()
-    for i in range(2, len(letters)):
+    for i in range(1, len(letters)):
         p = permchr(letters, i+1)
         idx = np.asarray(list(map(lambda x: x in ws, p)))
         potential_matches = p[idx]
